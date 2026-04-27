@@ -14,6 +14,12 @@ let allPrizes = [];
 let prizes = [];
 let angle = 0;
 let spinning = false;
+let logoAngle = 0;
+
+const logo = new Image();
+let logoLoaded = false;
+logo.onload = () => { logoLoaded = true; drawWheel(); };
+logo.src = "logo.svg";
 
 function sizeCanvas() {
   const size = Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.96);
@@ -50,7 +56,6 @@ async function loadPrizes() {
 
   prizes = allPrizes.filter(p => p.quantity > 0);
   document.getElementById("empty-msg").style.display = prizes.length ? "none" : "block";
-  document.getElementById("spinBtn")?.removeAttribute("disabled");
   drawWheel();
 }
 
@@ -81,10 +86,39 @@ function drawWheel() {
     ctx.restore();
   }
 
-  ctx.beginPath();
-  ctx.arc(CX, CY, Math.max(18, R * 0.06), 0, 2 * Math.PI);
-  ctx.fillStyle = "#0d0d0d";
-  ctx.fill();
+  // Logo in center — counter-rotates to stay upright
+  const logoR = Math.max(24, R * 0.14);
+
+  if (logoLoaded) {
+    ctx.save();
+    ctx.translate(CX, CY);
+
+    // Shadow
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = logoR * 0.4;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 2;
+
+    // Clip to circle
+    ctx.beginPath();
+    ctx.arc(0, 0, logoR, 0, 2 * Math.PI);
+    ctx.closePath();
+    ctx.clip();
+
+    // White background
+    ctx.fillStyle = "#fff";
+    ctx.fill();
+
+    // Counter-rotate to stay upright
+    ctx.rotate(logoAngle);
+    ctx.drawImage(logo, -logoR, -logoR, logoR * 2, logoR * 2);
+    ctx.restore();
+  } else {
+    ctx.beginPath();
+    ctx.arc(CX, CY, logoR, 0, 2 * Math.PI);
+    ctx.fillStyle = "#0d0d0d";
+    ctx.fill();
+  }
 }
 
 function pickWinner() {
@@ -125,6 +159,7 @@ function onDragMove(x, y) {
   if (delta < -Math.PI) delta += 2 * Math.PI;
 
   angle += delta;
+  logoAngle = -angle;
   drawWheel();
 
   const dt = now - lastDragTime;
@@ -149,11 +184,6 @@ function showPopup(text) {
 
 function hidePopup() {
   document.getElementById("popup").classList.add("hidden");
-}
-
-function buttonSpin() {
-  if (spinning || !prizes.length) return;
-  launchSpin(0.3 + Math.random() * 0.1);
 }
 
 async function launchSpin(velocity) {
@@ -189,6 +219,7 @@ async function launchSpin(velocity) {
     function animate(now) {
       const t = Math.min((now - startTime) / duration, 1);
       angle = startAngle + totalDelta * (1 - Math.pow(1 - t, 4));
+      logoAngle = -angle;
       drawWheel();
       if (t < 1) requestAnimationFrame(animate);
       else resolve();
@@ -198,6 +229,27 @@ async function launchSpin(velocity) {
 
   spinning = false;
   angle = angle % (2 * Math.PI);
+
+  // Animate logo to upright
+  const logoStart = logoAngle % (2 * Math.PI);
+  let logoTarget = 0;
+  let logoDelta = logoTarget - logoStart;
+  // Shortest path
+  if (logoDelta > Math.PI) logoDelta -= 2 * Math.PI;
+  if (logoDelta < -Math.PI) logoDelta += 2 * Math.PI;
+
+  const logoSnapDuration = 400;
+  const logoSnapStart = performance.now();
+  await new Promise(resolve => {
+    function snapLogo(now) {
+      const t = Math.min((now - logoSnapStart) / logoSnapDuration, 1);
+      logoAngle = logoStart + logoDelta * (1 - Math.pow(1 - t, 3));
+      drawWheel();
+      if (t < 1) requestAnimationFrame(snapLogo);
+      else { logoAngle = 0; drawWheel(); resolve(); }
+    }
+    requestAnimationFrame(snapLogo);
+  });
   if (winner.is_prize !== false) {
     showPopup("\ud83c\udf89 " + winner.name + "!");
     confetti();
@@ -226,7 +278,6 @@ function confetti() {
     `;
     document.body.appendChild(el);
 
-    const screenMin = Math.min(window.innerWidth, window.innerHeight);
     const speedScale = Math.max(1, screenMin / 800);
     const spreadScale = screenMin / 800;
     const spreadAngle = Math.random() * Math.PI * 2;
