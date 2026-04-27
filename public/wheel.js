@@ -1,0 +1,215 @@
+const COLORS = [
+  "#FF3B30","#FF9500","#FFCC00","#34C759",
+  "#5AC8FA","#007AFF","#5856D6","#AF52DE",
+  "#FF2D55","#FF9F0A","#FFD60A","#30D158",
+  "#64D2FF","#0A84FF","#5E5CE6","#BF5AF2"
+];
+
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+const CX = canvas.width / 2;
+const CY = canvas.height / 2;
+const R = CX - 4;
+
+let prizes = [];
+let angle = 0;
+let spinning = false;
+
+async function loadPrizes() {
+  const res = await fetch("/api/prizes");
+  prizes = await res.json();
+  document.getElementById("empty-msg").style.display = prizes.length ? "none" : "block";
+  document.getElementById("spinBtn").disabled = !prizes.length;
+  drawWheel();
+}
+
+function drawWheel() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!prizes.length) return;
+
+  const arc = (2 * Math.PI) / prizes.length;
+
+  for (let i = 0; i < prizes.length; i++) {
+    const start = i * arc + angle;
+    const end = start + arc;
+
+    ctx.beginPath();
+    ctx.fillStyle = COLORS[i % COLORS.length];
+    ctx.moveTo(CX, CY);
+    ctx.arc(CX, CY, R, start, end);
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(CX, CY);
+    ctx.rotate(start + arc / 2);
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${prizes.length > 12 ? 10 : 13}px Arial`;
+    ctx.textAlign = "right";
+    ctx.fillText(prizes[i].name, R - 12, 4);
+    ctx.restore();
+  }
+
+  ctx.beginPath();
+  ctx.arc(CX, CY, 18, 0, 2 * Math.PI);
+  ctx.fillStyle = "#0d0d0d";
+  ctx.fill();
+}
+
+// --- Drag-to-spin state ---
+let dragging = false;
+let lastDragAngle = 0;
+let lastDragTime = 0;
+let dragVelocity = 0;
+
+function getAngleFromCenter(x, y) {
+  const rect = canvas.getBoundingClientRect();
+  return Math.atan2(y - rect.top - CY, x - rect.left - CX);
+}
+
+function onDragStart(x, y) {
+  if (spinning || !prizes.length) return;
+  dragging = true;
+  lastDragAngle = getAngleFromCenter(x, y);
+  lastDragTime = performance.now();
+  dragVelocity = 0;
+}
+
+function onDragMove(x, y) {
+  if (!dragging) return;
+  const now = performance.now();
+  const curr = getAngleFromCenter(x, y);
+  let delta = curr - lastDragAngle;
+  if (delta > Math.PI) delta -= 2 * Math.PI;
+  if (delta < -Math.PI) delta += 2 * Math.PI;
+
+  angle += delta;
+  drawWheel();
+
+  const dt = now - lastDragTime;
+  if (dt > 0) dragVelocity = delta / dt * 16;
+
+  lastDragAngle = curr;
+  lastDragTime = now;
+}
+
+function onDragEnd() {
+  if (!dragging) return;
+  dragging = false;
+  if (Math.abs(dragVelocity) > 0.02) {
+    launchSpin(dragVelocity);
+  }
+}
+
+function buttonSpin() {
+  if (spinning || !prizes.length) return;
+  launchSpin(0.3 + Math.random() * 0.1);
+}
+
+async function launchSpin(velocity) {
+  spinning = true;
+  document.getElementById("spinBtn").disabled = true;
+  document.getElementById("result").innerText = "";
+
+  if (Math.abs(velocity) < 0.15) velocity = velocity < 0 ? -0.15 : 0.15;
+
+  const { winner, is_prize, error } = await fetch("/api/spin", { method: "POST" }).then(r => r.json());
+  if (error) {
+    spinning = false;
+    await loadPrizes();
+    return;
+  }
+
+  const winIdx = prizes.findIndex(p => p.name === winner);
+  const arc = (2 * Math.PI) / prizes.length;
+  const sliceMid = winIdx * arc + arc / 2;
+  let targetAngle = -Math.PI / 2 - sliceMid;
+
+  const dir = velocity >= 0 ? 1 : -1;
+  let destination = targetAngle + dir * 6 * 2 * Math.PI;
+  if (dir > 0) {
+    while (destination <= angle) destination += 2 * Math.PI;
+  } else {
+    while (destination >= angle) destination -= 2 * Math.PI;
+  }
+
+  const startAngle = angle;
+  const totalDelta = destination - startAngle;
+  const duration = 4000;
+  const startTime = performance.now();
+
+  await new Promise(resolve => {
+    function animate(now) {
+      const t = Math.min((now - startTime) / duration, 1);
+      angle = startAngle + totalDelta * (1 - Math.pow(1 - t, 4));
+      drawWheel();
+      if (t < 1) requestAnimationFrame(animate);
+      else resolve();
+    }
+    requestAnimationFrame(animate);
+  });
+
+  spinning = false;
+  angle = angle % (2 * Math.PI);
+  if (is_prize) {
+    document.getElementById("result").innerText = "\ud83c\udf89 " + winner + "!";
+    confetti();
+  } else {
+    document.getElementById("result").innerText = "\ud83d\ude14 Not a winner. Try again!";
+  }
+  setTimeout(() => loadPrizes(), 1500);
+}
+
+function confetti() {
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+
+  for (let i = 0; i < 150; i++) {
+    const el = document.createElement("div");
+    const size = Math.random() * 6 + 4;
+    el.style.cssText = `
+      position:fixed; width:${size}px; height:${size}px;
+      background:${COLORS[Math.floor(Math.random()*COLORS.length)]};
+      left:${cx}px; top:${cy}px;
+      border-radius:${Math.random()>.5?'50%':'0'};
+      z-index:999; pointer-events:none;
+    `;
+    document.body.appendChild(el);
+
+    const spreadAngle = Math.random() * Math.PI * 2;
+    let vx = Math.cos(spreadAngle) * (Math.random() * 12 + 5);
+    let vy = -(Math.random() * 16 + 8);
+    const gravity = 0.15;
+    let x = cx, y = cy;
+
+    (function move() {
+      vy += gravity;
+      x += vx;
+      y += vy;
+      el.style.left = x + "px";
+      el.style.top = y + "px";
+      if (y < window.innerHeight + 20) requestAnimationFrame(move);
+      else el.remove();
+    })();
+  }
+}
+
+document.getElementById("spinBtn").onclick = buttonSpin;
+document.getElementById("resetBtn").onclick = () => location.reload();
+
+canvas.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  onDragStart(t.clientX, t.clientY);
+}, { passive: false });
+canvas.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  const t = e.touches[0];
+  onDragMove(t.clientX, t.clientY);
+}, { passive: false });
+canvas.addEventListener("touchend", onDragEnd);
+
+canvas.addEventListener("mousedown", (e) => onDragStart(e.clientX, e.clientY));
+window.addEventListener("mousemove", (e) => onDragMove(e.clientX, e.clientY));
+window.addEventListener("mouseup", onDragEnd);
+
+loadPrizes();
