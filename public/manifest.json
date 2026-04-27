@@ -1,0 +1,18 @@
+{
+  "name": "Prize Wheel",
+  "short_name": "Prize Wheel",
+  "description": "Spin the wheel to win a prize!",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0d0d0d",
+  "theme_color": "#0d0d0d",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
