@@ -5,19 +5,41 @@ const COLORS = [
   "#64D2FF","#0A84FF","#5E5CE6","#BF5AF2"
 ];
 
+const STORAGE_KEY = "prizewheelQuantities";
+
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
 const CX = canvas.width / 2;
 const CY = canvas.height / 2;
 const R = CX - 4;
 
+let allPrizes = [];
 let prizes = [];
 let angle = 0;
 let spinning = false;
 
+function getSavedQuantities() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
+  catch { return null; }
+}
+
+function saveQuantities() {
+  const map = {};
+  allPrizes.forEach(p => map[p.name] = p.quantity);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+}
+
 async function loadPrizes() {
-  const res = await fetch("/api/prizes");
-  prizes = await res.json();
+  const res = await fetch("prizes.json");
+  const data = await res.json();
+  const saved = getSavedQuantities();
+
+  allPrizes = data.map(p => ({
+    ...p,
+    quantity: saved && saved[p.name] !== undefined ? saved[p.name] : p.quantity
+  }));
+
+  prizes = allPrizes.filter(p => p.quantity > 0);
   document.getElementById("empty-msg").style.display = prizes.length ? "none" : "block";
   document.getElementById("spinBtn").disabled = !prizes.length;
   drawWheel();
@@ -55,7 +77,17 @@ function drawWheel() {
   ctx.fill();
 }
 
-// --- Drag-to-spin state ---
+function pickWinner() {
+  const totalWeight = prizes.reduce((sum, p) => sum + p.probability, 0);
+  let rand = Math.random() * totalWeight;
+  for (const prize of prizes) {
+    rand -= prize.probability;
+    if (rand <= 0) return prize;
+  }
+  return prizes[0];
+}
+
+// --- Drag-to-spin ---
 let dragging = false;
 let lastDragAngle = 0;
 let lastDragTime = 0;
@@ -112,14 +144,14 @@ async function launchSpin(velocity) {
 
   if (Math.abs(velocity) < 0.15) velocity = velocity < 0 ? -0.15 : 0.15;
 
-  const { winner, is_prize, error } = await fetch("/api/spin", { method: "POST" }).then(r => r.json());
-  if (error) {
-    spinning = false;
-    await loadPrizes();
-    return;
-  }
+  const winner = pickWinner();
 
-  const winIdx = prizes.findIndex(p => p.name === winner);
+  // Decrement quantity and save
+  const master = allPrizes.find(p => p.name === winner.name);
+  master.quantity--;
+  saveQuantities();
+
+  const winIdx = prizes.findIndex(p => p.name === winner.name);
   const arc = (2 * Math.PI) / prizes.length;
   const sliceMid = winIdx * arc + arc / 2;
   let targetAngle = -Math.PI / 2 - sliceMid;
@@ -150,8 +182,8 @@ async function launchSpin(velocity) {
 
   spinning = false;
   angle = angle % (2 * Math.PI);
-  if (is_prize) {
-    document.getElementById("result").innerText = "\ud83c\udf89 " + winner + "!";
+  if (winner.is_prize !== false) {
+    document.getElementById("result").innerText = "\ud83c\udf89 " + winner.name + "!";
     confetti();
   } else {
     document.getElementById("result").innerText = "\ud83d\ude14 Not a winner. Try again!";
@@ -194,7 +226,10 @@ function confetti() {
 }
 
 document.getElementById("spinBtn").onclick = buttonSpin;
-document.getElementById("resetBtn").onclick = () => location.reload();
+document.getElementById("resetBtn").onclick = () => {
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+};
 
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault();
