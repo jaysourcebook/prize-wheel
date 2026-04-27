@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Prize Wheel</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>🎯 Prize Wheel</h1>
+
+<div class="controls">
+  <button id="spinBtn">SPIN</button>
+  <button id="resetBtn">RESET</button>
+</div>
+
+<div class="wheel-wrap">
+  <div id="pointer"></div>
+  <canvas id="wheel" width="370" height="370"></canvas>
+</div>
+
+<div id="result"></div>
+<div id="empty-msg">No prizes left! Hit RESET to reload.</div>
+
+<script src="wheel.js"></script>
+</body>
+</html>
