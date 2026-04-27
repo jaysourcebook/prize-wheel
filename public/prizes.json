@@ -1,0 +1,11 @@
+[
+  { "name": "Coffee Mug", "is_prize": true, "quantity": 10, "probability": 30 },
+  { "name": "Gift Card $10", "is_prize": true, "quantity": 5, "probability": 20 },
+  { "name": "T-Shirt", "is_prize": true, "quantity": 8, "probability": 25 },
+  { "name": "Sticker Pack", "is_prize": true, "quantity": 20, "probability": 50 },
+  { "name": "Wireless Earbuds", "is_prize": true, "quantity": 2, "probability": 5 },
+  { "name": "Water Bottle", "is_prize": true, "quantity": 12, "probability": 40 },
+  { "name": "Gift Card $50", "is_prize": true, "quantity": 1, "probability": 2 },
+  { "name": "Notebook", "is_prize": true, "quantity": 15, "probability": 45 },
+  { "name": "Not a winner", "is_prize": false, "quantity": 6, "probability": 30 }
+]
