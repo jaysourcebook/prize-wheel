@@ -203,22 +203,28 @@ function confetti() {
   const cx = window.innerWidth / 2;
   const cy = window.innerHeight / 2;
 
-  for (let i = 0; i < 300; i++) {
+  const screenMin = Math.min(window.innerWidth, window.innerHeight);
+  const count = Math.floor(Math.max(80, screenMin * 0.3));
+
+  for (let i = 0; i < count; i++) {
     const el = document.createElement("div");
     const size = Math.random() * 6 + 4;
     el.style.cssText = `
       position:fixed; width:${size}px; height:${size}px;
       background:${COLORS[Math.floor(Math.random()*COLORS.length)]};
       left:${cx}px; top:${cy}px;
-      border-radius:${Math.random()>.5?'50%':'0'};
+      border-radius:${Math.random()>.5?'50%':'3px'};
       z-index:999; pointer-events:none;
     `;
     document.body.appendChild(el);
 
+    const screenMin = Math.min(window.innerWidth, window.innerHeight);
+    const speedScale = Math.max(1, screenMin / 800);
+    const spreadScale = screenMin / 800;
     const spreadAngle = Math.random() * Math.PI * 2;
-    let vx = Math.cos(spreadAngle) * (Math.random() * 10 + 3);
-    let vy = -(Math.random() * 12 + 5);
-    const gravity = 0.08;
+    let vx = Math.cos(spreadAngle) * (Math.random() * 5 + 2) * spreadScale;
+    let vy = -(Math.random() * 12 + 5) * speedScale;
+    const gravity = 0.08 * speedScale;
     let x = cx, y = cy;
 
     (function move() {
