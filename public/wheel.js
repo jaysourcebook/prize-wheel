@@ -16,7 +16,7 @@ let angle = 0;
 let spinning = false;
 
 function sizeCanvas() {
-  const size = Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.9);
+  const size = Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.96);
   canvas.width = size;
   canvas.height = size;
   CX = size / 2;
@@ -50,7 +50,7 @@ async function loadPrizes() {
 
   prizes = allPrizes.filter(p => p.quantity > 0);
   document.getElementById("empty-msg").style.display = prizes.length ? "none" : "block";
-  document.getElementById("spinBtn").disabled = !prizes.length;
+  document.getElementById("spinBtn")?.removeAttribute("disabled");
   drawWheel();
 }
 
@@ -142,6 +142,15 @@ function onDragEnd() {
   }
 }
 
+function showPopup(text) {
+  document.getElementById("popupText").innerText = text;
+  document.getElementById("popup").classList.remove("hidden");
+}
+
+function hidePopup() {
+  document.getElementById("popup").classList.add("hidden");
+}
+
 function buttonSpin() {
   if (spinning || !prizes.length) return;
   launchSpin(0.3 + Math.random() * 0.1);
@@ -149,8 +158,7 @@ function buttonSpin() {
 
 async function launchSpin(velocity) {
   spinning = true;
-  document.getElementById("spinBtn").disabled = true;
-  document.getElementById("result").innerText = "";
+  hidePopup();
 
   if (Math.abs(velocity) < 0.15) velocity = velocity < 0 ? -0.15 : 0.15;
 
@@ -191,10 +199,10 @@ async function launchSpin(velocity) {
   spinning = false;
   angle = angle % (2 * Math.PI);
   if (winner.is_prize !== false) {
-    document.getElementById("result").innerText = "\ud83c\udf89 " + winner.name + "!";
+    showPopup("\ud83c\udf89 " + winner.name + "!");
     confetti();
   } else {
-    document.getElementById("result").innerText = "\ud83d\ude14 Not a winner. Try again!";
+    showPopup("\ud83d\ude14 Not a winner. Try again!");
   }
   setTimeout(() => loadPrizes(), 1500);
 }
@@ -204,7 +212,7 @@ function confetti() {
   const cy = window.innerHeight / 2;
 
   const screenMin = Math.min(window.innerWidth, window.innerHeight);
-  const count = Math.floor(Math.max(80, screenMin * 0.3));
+  const count = Math.floor(Math.max(50, screenMin * 0.15));
 
   for (let i = 0; i < count; i++) {
     const el = document.createElement("div");
@@ -222,8 +230,8 @@ function confetti() {
     const speedScale = Math.max(1, screenMin / 800);
     const spreadScale = screenMin / 800;
     const spreadAngle = Math.random() * Math.PI * 2;
-    let vx = Math.cos(spreadAngle) * (Math.random() * 5 + 2) * spreadScale;
-    let vy = -(Math.random() * 12 + 5) * speedScale;
+    let vx = Math.cos(spreadAngle) * (Math.random() * 3 + 1) * spreadScale;
+    let vy = -(Math.random() * 6 + 3) * speedScale;
     const gravity = 0.08 * speedScale;
     let x = cx, y = cy;
 
@@ -239,7 +247,10 @@ function confetti() {
   }
 }
 
-document.getElementById("spinBtn").onclick = buttonSpin;
+document.getElementById("popup").onclick = hidePopup;
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("popup").classList.contains("hidden")) hidePopup();
+});
 
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault();

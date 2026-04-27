@@ -10,23 +10,6 @@ body {
   align-items: center;
   justify-content: center;
 }
-#spinBtn {
-  position: fixed;
-  top: 40px;
-  right: 40px;
-  z-index: 10;
-  padding: 14px 32px;
-  font-size: 18px;
-  font-weight: 700;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  background: #ff3b30;
-  color: #fff;
-  transition: opacity .2s;
-}
-#spinBtn:active { opacity: .7; }
-#spinBtn:disabled { background: #666; cursor: not-allowed; }
 .wheel-wrap {
   position: relative;
   display: inline-block;
@@ -44,15 +27,25 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
 }
 canvas { display: block; }
-#result {
+.popup {
   position: fixed;
-  bottom: 30px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  font-size: 28px;
-  z-index: 10;
-  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  background: #1c1c1e;
+  border-radius: 16px;
+  padding: 32px;
+  min-width: 280px;
+  text-align: center;
+  z-index: 1000;
+  box-shadow: 0 8px 40px rgba(0,0,0,.6);
+  cursor: pointer;
 }
+#popupText {
+  font-size: 26px;
+  font-weight: 700;
+}
+.hidden { display: none; }
 #empty-msg {
   display: none;
   position: fixed;
