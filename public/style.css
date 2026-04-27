@@ -3,30 +3,33 @@ body {
   background: #0d0d0d;
   color: #fff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-  text-align: center;
-  overflow-x: hidden;
-  min-height: 100vh;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-h1 { margin: 24px 0 8px; font-size: 28px; }
-.controls { margin: 12px 0; }
-button {
+#spinBtn {
+  position: fixed;
+  top: 40px;
+  right: 40px;
+  z-index: 10;
   padding: 14px 32px;
   font-size: 18px;
   font-weight: 700;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-  margin: 0 6px;
+  background: #ff3b30;
+  color: #fff;
   transition: opacity .2s;
 }
-button:active { opacity: .7; }
-#spinBtn { background: #ff3b30; color: #fff; }
+#spinBtn:active { opacity: .7; }
 #spinBtn:disabled { background: #666; cursor: not-allowed; }
-#resetBtn { background: #333; color: #fff; }
 .wheel-wrap {
   position: relative;
   display: inline-block;
-  margin-top: 8px;
 }
 #pointer {
   position: absolute;
@@ -42,13 +45,21 @@ button:active { opacity: .7; }
 }
 canvas { display: block; }
 #result {
-  font-size: 26px;
-  margin: 16px 0;
-  min-height: 36px;
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 28px;
+  z-index: 10;
+  white-space: nowrap;
 }
 #empty-msg {
   display: none;
-  font-size: 20px;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
   color: #ff9500;
-  margin-top: 20px;
+  z-index: 10;
 }

@@ -6,17 +6,26 @@ const COLORS = [
 ];
 
 const STORAGE_KEY = "prizewheelQuantities";
-
 const canvas = document.getElementById("wheel");
 const ctx = canvas.getContext("2d");
-const CX = canvas.width / 2;
-const CY = canvas.height / 2;
-const R = CX - 4;
 
+let CX, CY, R;
 let allPrizes = [];
 let prizes = [];
 let angle = 0;
 let spinning = false;
+
+function sizeCanvas() {
+  const size = Math.floor(Math.min(window.innerWidth, window.innerHeight) * 0.9);
+  canvas.width = size;
+  canvas.height = size;
+  CX = size / 2;
+  CY = size / 2;
+  R = CX - 4;
+  drawWheel();
+}
+
+window.addEventListener("resize", sizeCanvas);
 
 function getSavedQuantities() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || null; }
@@ -50,6 +59,7 @@ function drawWheel() {
   if (!prizes.length) return;
 
   const arc = (2 * Math.PI) / prizes.length;
+  const fontSize = Math.max(10, Math.floor(R / 14));
 
   for (let i = 0; i < prizes.length; i++) {
     const start = i * arc + angle;
@@ -65,14 +75,14 @@ function drawWheel() {
     ctx.translate(CX, CY);
     ctx.rotate(start + arc / 2);
     ctx.fillStyle = "#fff";
-    ctx.font = `bold ${prizes.length > 12 ? 10 : 13}px Arial`;
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = "right";
-    ctx.fillText(prizes[i].name, R - 12, 4);
+    ctx.fillText(prizes[i].name, R - 16, 5);
     ctx.restore();
   }
 
   ctx.beginPath();
-  ctx.arc(CX, CY, 18, 0, 2 * Math.PI);
+  ctx.arc(CX, CY, Math.max(18, R * 0.06), 0, 2 * Math.PI);
   ctx.fillStyle = "#0d0d0d";
   ctx.fill();
 }
@@ -145,8 +155,6 @@ async function launchSpin(velocity) {
   if (Math.abs(velocity) < 0.15) velocity = velocity < 0 ? -0.15 : 0.15;
 
   const winner = pickWinner();
-
-  // Decrement quantity and save
   const master = allPrizes.find(p => p.name === winner.name);
   master.quantity--;
   saveQuantities();
@@ -195,7 +203,7 @@ function confetti() {
   const cx = window.innerWidth / 2;
   const cy = window.innerHeight / 2;
 
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 300; i++) {
     const el = document.createElement("div");
     const size = Math.random() * 6 + 4;
     el.style.cssText = `
@@ -208,9 +216,9 @@ function confetti() {
     document.body.appendChild(el);
 
     const spreadAngle = Math.random() * Math.PI * 2;
-    let vx = Math.cos(spreadAngle) * (Math.random() * 12 + 5);
-    let vy = -(Math.random() * 16 + 8);
-    const gravity = 0.15;
+    let vx = Math.cos(spreadAngle) * (Math.random() * 10 + 3);
+    let vy = -(Math.random() * 12 + 5);
+    const gravity = 0.08;
     let x = cx, y = cy;
 
     (function move() {
@@ -226,10 +234,6 @@ function confetti() {
 }
 
 document.getElementById("spinBtn").onclick = buttonSpin;
-document.getElementById("resetBtn").onclick = () => {
-  localStorage.removeItem(STORAGE_KEY);
-  location.reload();
-};
 
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault();
@@ -247,4 +251,5 @@ canvas.addEventListener("mousedown", (e) => onDragStart(e.clientX, e.clientY));
 window.addEventListener("mousemove", (e) => onDragMove(e.clientX, e.clientY));
 window.addEventListener("mouseup", onDragEnd);
 
+sizeCanvas();
 loadPrizes();
